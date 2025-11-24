@@ -62,6 +62,15 @@ The service will be available at:
 - http://localhost:3002/version
 - http://localhost:3002/docs
 
+### Health check
+To verify the service is healthy after startup:
+```
+curl -sf http://localhost:${PORT:-3002}/health
+```
+This should return:
+```
+{"status":"ok","service":"Protocol and Coding Service"}
+```
+
 ## Notes
 - This scaffolding is non-destructive and does not remove or alter future APIs. Add new routers under `ProtocolandCodingService/app/` and include them in `app/main.py`.
-

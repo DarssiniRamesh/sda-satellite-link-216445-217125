@@ -13,14 +13,15 @@ elif [ -d "sda-satellite-link-216445-217125" ] && [ -f "sda-satellite-link-21644
   cd "sda-satellite-link-216445-217125"
 fi
 
+# Standardized defaults; respect externally provided PORT (e.g., 3010 in preview)
 PORT="${PORT:-3002}"
 HOST="${HOST:-0.0.0.0}"
 
-# Create/activate virtual environment (idempotent)
+# Always create/activate a virtual environment
 VENV_DIR="${VENV_DIR:-.venv}"
 if [ ! -d "${VENV_DIR}" ]; then
   echo "[run.sh] Creating local virtualenv at ${VENV_DIR} ..."
-  python -m venv "${VENV_DIR}"
+  python3 -m venv "${VENV_DIR}"
 fi
 # shellcheck disable=SC1090
 source "${VENV_DIR}/bin/activate"
@@ -33,9 +34,12 @@ echo "[run.sh] Installing requirements ..."
 python -m pip install --upgrade pip
 if [ -f "requirements.txt" ]; then
   python -m pip install --no-cache-dir -r requirements.txt
+else
+  echo "[run.sh] WARNING: requirements.txt not found; attempting minimal install ..."
+  python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0' 'pydantic>=2,<3' 'pydantic-settings>=2,<3' 'python-dotenv>=1.0.0,<2.0.0'
 fi
 
-# Preflight import check. If it fails, attempt reinstall and fail if still missing.
+# Preflight import check; if it fails, reinstall and re-check, otherwise abort
 if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
   echo "[run.sh] fastapi/uvicorn not importable; attempting reinstall ..."
   if [ -f "requirements.txt" ]; then

@@ -21,7 +21,7 @@ else
   done
 fi
 
-# Use provided HOST/PORT env vars or defaults
+# Use provided HOST/PORT env vars or defaults; respect PORT if set (e.g., 3010)
 PORT="${PORT:-3002}"
 HOST="${HOST:-0.0.0.0}"
 
@@ -29,7 +29,7 @@ HOST="${HOST:-0.0.0.0}"
 VENV_DIR="${VENV_DIR:-.venv}"
 if [ ! -d "${VENV_DIR}" ]; then
   echo "[bootstrap] Creating virtual environment at ${VENV_DIR} ..."
-  python -m venv "${VENV_DIR}"
+  python3 -m venv "${VENV_DIR}"
 fi
 # shellcheck disable=SC1090
 source "${VENV_DIR}/bin/activate"
@@ -49,9 +49,11 @@ echo "[bootstrap] Installing dependencies ..."
 python -m pip install --upgrade pip
 if [ -f "${REQ_FILE}" ]; then
   python -m pip install --no-cache-dir -r "${REQ_FILE}"
+else
+  python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0' 'pydantic>=2,<3' 'pydantic-settings>=2,<3' 'python-dotenv>=1.0.0,<2.0.0'
 fi
 
-# Preflight import check. If it fails, attempt reinstall once and fail with clear message if still missing.
+# Preflight import check; if it fails, reinstall and re-check then abort if still missing
 if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
   echo "[bootstrap] fastapi/uvicorn not importable; attempting reinstall ..."
   if [ -f "${REQ_FILE}" ]; then
