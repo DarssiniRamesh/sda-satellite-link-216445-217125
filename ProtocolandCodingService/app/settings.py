@@ -1,11 +1,12 @@
 """
 Application settings and configuration management.
 
-Uses Pydantic BaseSettings to load configuration from environment variables
+Uses Pydantic Settings v2 to load configuration from environment variables
 and a .env file (if present). Provides sane defaults for local development.
 """
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class AppSettings(BaseSettings):
@@ -29,9 +30,10 @@ class AppSettings(BaseSettings):
     # Toggle for debug mode
     DEBUG: bool = Field(False, description="Enable debug features and verbose logs")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+    }
 
 
 # PUBLIC_INTERFACE

@@ -8,7 +8,15 @@ It imports the FastAPI app instance from the ProtocolandCodingService package.
 The package includes an __init__.py to allow absolute imports to work consistently.
 """
 
-from ProtocolandCodingService.app.main import app  # absolute works from repo root
+# Prefer local service package import first, then fallback to absolute package
+try:
+    from ProtocolandCodingService.app.main import app  # type: ignore
+except Exception:
+    # If running inside the service dir by accident, try the relative import path
+    try:
+        from ProtocolandCodingService.app.main import app  # type: ignore
+    except Exception as e:
+        raise e
 
 # PUBLIC_INTERFACE
 def get_app():

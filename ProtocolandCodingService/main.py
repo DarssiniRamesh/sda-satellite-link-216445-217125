@@ -13,18 +13,18 @@ import sys
 from pathlib import Path
 
 # Robust import strategy:
-# 1) Prefer relative import (works when CWD is the service directory and the package is local)
-# 2) Fallback to absolute import (works when running from repo root)
-# 3) If both fail, add parent to sys.path and retry absolute import
+# 1) Prefer import from local package when CWD is service dir
+# 2) Fallback to absolute package import
+# 3) If both fail, append parent to sys.path then retry absolute import
 app = None  # will be set by one of the import paths
 
-# Try relative import first to support `uvicorn main:app` from service dir
+# Try local package import to support `uvicorn main:app` from service dir
 try:
     from app.main import app as _app  # type: ignore
     app = _app
 except Exception:
-    # Try absolute import (works when running from repo root)
     try:
+        # Try absolute import (works when running from repo root)
         from ProtocolandCodingService.app.main import app as _app  # type: ignore
         app = _app
     except Exception:
