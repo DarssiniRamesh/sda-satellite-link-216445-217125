@@ -2,8 +2,11 @@
 # Pin to widely compatible, stable versions for FastAPI stack
 fastapi==0.110.0
 uvicorn[standard]==0.24.0.post1
+
 # Require Pydantic v2 for compatibility with pydantic-settings v2
 pydantic>=2,<3
+# Use pydantic-settings v2.x for BaseSettings and env loading
 pydantic-settings>=2.2.0,<3
+
 # Load environment variables from .env if present
 python-dotenv>=1.0.0,<2.0.0

@@ -5,6 +5,7 @@ Uses Pydantic Settings v2 to load configuration from environment variables
 and a .env file (if present). Provides sane defaults for local development.
 """
 
+# Keep Field import from pydantic (v2) and import BaseSettings from pydantic_settings (v2)
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -30,9 +31,13 @@ class AppSettings(BaseSettings):
     # Toggle for debug mode
     DEBUG: bool = Field(False, description="Enable debug features and verbose logs")
 
+    # Pydantic v2 settings config pattern
+    # - env_file and encoding supported by pydantic-settings v2
+    # - extra="ignore" to avoid errors if unexpected env vars are present
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
+        "extra": "ignore",
     }
 
 

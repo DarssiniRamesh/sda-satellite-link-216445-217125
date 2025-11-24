@@ -7,16 +7,27 @@ This file allows running the app from the repository root with:
 It imports the FastAPI app instance from the ProtocolandCodingService package.
 The package includes an __init__.py to allow absolute imports to work consistently.
 """
+import sys
+from pathlib import Path
 
-# Prefer local service package import first, then fallback to absolute package
+# Robust import strategy similar to service-level shim
+app = None
 try:
-    from ProtocolandCodingService.app.main import app  # type: ignore
+    # Prefer import via local package path if executed from inside service dir by mistake
+    from ProtocolandCodingService.app.main import app as _app  # type: ignore
+    app = _app
 except Exception:
-    # If running inside the service dir by accident, try the relative import path
     try:
-        from ProtocolandCodingService.app.main import app  # type: ignore
-    except Exception as e:
-        raise e
+        # Try relative import from service subpackage if local layout changes
+        from ProtocolandCodingService.app.main import app as _app  # type: ignore
+        app = _app
+    except Exception:
+        # Append parent of this file to sys.path and retry absolute import
+        root_dir = Path(__file__).resolve().parent
+        if str(root_dir) not in sys.path:
+            sys.path.append(str(root_dir))
+        from ProtocolandCodingService.app.main import app as _app  # type: ignore
+        app = _app
 
 # PUBLIC_INTERFACE
 def get_app():
