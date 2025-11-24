@@ -1,16 +1,51 @@
+from __future__ import annotations
+
+from typing import Final
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+# PUBLIC_INTERFACE
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application.
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    Returns:
+        FastAPI: Configured FastAPI application instance.
+    """
+    application = FastAPI(
+        title="Protocol and Coding Service",
+        description=(
+            "Handles synchronization, channel coding (5G NR LDPC FEC), frame construction, "
+            "scrambling, error control, and ARQ management. Exposes protocol processing and "
+            "frame handling interfaces."
+        ),
+        version="0.1.0",
+        openapi_tags=[
+            {"name": "Health", "description": "Service health and liveness checks."},
+        ],
+    )
 
-@app.get("/")
-def health_check():
-    return {"message": "Healthy"}
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @application.get("/", tags=["Health"], summary="Health Check", description="Simple health check endpoint.")
+    # PUBLIC_INTERFACE
+    def health_check() -> dict[str, str]:
+        """Health check endpoint.
+
+        Returns:
+            dict[str, str]: JSON payload indicating service health.
+        """
+        return {"message": "Healthy"}
+
+    return application
+
+
+# Expose a module-level symbol `app`
+app: Final[FastAPI] = create_app()
+__all__: Final = ["app", "create_app"]
