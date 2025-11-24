@@ -6,6 +6,8 @@ from typing import Final
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import logging
+import os
 
 # PUBLIC_INTERFACE
 def create_app() -> FastAPI:
@@ -34,6 +36,23 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Log OpenAPI/docs URLs on startup for discoverability in preview/local environments
+    logger = logging.getLogger(__name__)
+
+    @application.on_event("startup")
+    async def _log_docs_urls() -> None:
+        port = os.getenv("PORT") or "5000"
+        host = "0.0.0.0"
+        try:
+            p = int(port)
+            if not (1 <= p <= 65535):
+                port = "5000"
+        except ValueError:
+            port = "5000"
+        logger.info("Protocol and Coding Service started")
+        logger.info("Swagger UI: http://%s:%s/docs", host, port)
+        logger.info("OpenAPI JSON: http://%s:%s/openapi.json", host, port)
 
     @application.get("/", tags=["Health"], summary="Health Check", description="Simple health check endpoint.")
     # PUBLIC_INTERFACE

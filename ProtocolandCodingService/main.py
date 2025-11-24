@@ -37,20 +37,20 @@ __all__: Final = ["app"]
 
 def _get_port_from_env() -> int:
     """
-    Read PORT from the environment and validate against allowed ports.
+    Read PORT from the environment and validate range 1..65535.
 
     Returns:
         int: The validated port. Defaults to 5000 if unset or invalid.
     """
-    allowed_ports = {3000, 3001, 3002, 5000}
+    default_port = 5000
     raw = os.environ.get("PORT")
     if not raw:
-        return 5000
+        return default_port
     try:
         port = int(raw)
     except (TypeError, ValueError):
-        return 5000
-    return port if port in allowed_ports else 5000
+        return default_port
+    return port if 1 <= port <= 65535 else default_port
 
 
 # If someone runs `python main.py` directly (not recommended in production),
@@ -60,4 +60,7 @@ if __name__ == "__main__":  # pragma: no cover
     import uvicorn
 
     port = _get_port_from_env()
+    logging.getLogger(__name__).info("Starting ProtocolandCodingService on %s:%s", "0.0.0.0", port)
+    logging.getLogger(__name__).info("Swagger UI: http://%s:%s/docs", "0.0.0.0", port)
+    logging.getLogger(__name__).info("OpenAPI JSON: http://%s:%s/openapi.json", "0.0.0.0", port)
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
