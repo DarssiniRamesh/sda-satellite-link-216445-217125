@@ -33,7 +33,6 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 
-
 @app.get(
     "/health",
     tags=["health"],
@@ -47,7 +46,6 @@ def health() -> dict:
     """Health check endpoint returning basic service status."""
     return {"status": "ok", "service": settings.APP_NAME}
 
-
 @app.get(
     "/version",
     tags=["meta"],
@@ -60,7 +58,6 @@ def health() -> dict:
 def version() -> dict:
     """Version endpoint returning app metadata."""
     return {"name": settings.APP_NAME, "version": settings.APP_VERSION}
-
 
 # Root handler can provide a minimal welcome or redirect
 @app.get(
