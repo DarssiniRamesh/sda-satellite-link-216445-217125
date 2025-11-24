@@ -13,29 +13,29 @@ import sys
 from pathlib import Path
 
 # Robust import strategy:
-# 1) Prefer import from local package when CWD is service dir
-# 2) Fallback to absolute package import
-# 3) If both fail, append parent to sys.path then retry absolute import
+# 1) Prefer import from local package when CWD is service dir (from app.main)
+# 2) If that fails, append parent to sys.path and try absolute package import
+# 3) Final fallback: try absolute import without modifying sys.path
 app = None  # will be set by one of the import paths
 
-# Try local package import to support `uvicorn main:app` from service dir
 try:
+    # Prefer local import so `uvicorn main:app` works directly inside service directory
     from app.main import app as _app  # type: ignore
     app = _app
 except Exception:
     try:
-        # Try absolute import (works when running from repo root)
-        from ProtocolandCodingService.app.main import app as _app  # type: ignore
-        app = _app
-    except Exception:
-        # As a last resort, ensure the parent of the service directory is on sys.path
+        # Ensure the parent of this service directory is on sys.path, then import absolutely
         service_dir = Path(__file__).resolve().parent
         parent_dir = service_dir.parent
         if str(parent_dir) not in sys.path:
             sys.path.append(str(parent_dir))
-        # Retry absolute import after fixing sys.path
         from ProtocolandCodingService.app.main import app as _app  # type: ignore
         app = _app
+    except Exception:
+        # Final attempt: absolute import without sys.path modification
+        from ProtocolandCodingService.app.main import app as _app  # type: ignore
+        app = _app
+
 
 # PUBLIC_INTERFACE
 def get_app():

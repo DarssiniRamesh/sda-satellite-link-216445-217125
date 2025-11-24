@@ -1,11 +1,15 @@
 """
 Application settings and configuration management.
 
-Uses Pydantic Settings v2 to load configuration from environment variables
-and a .env file (if present). Provides sane defaults for local development.
+Uses Pydantic v2 and pydantic-settings v2 to load configuration from environment
+variables and an optional .env file. Provides sane defaults for local development.
+
+Note:
+- Field is imported from pydantic (v2)
+- BaseSettings is imported from pydantic_settings (v2)
+- No legacy pydantic.BaseSettings imports remain
 """
 
-# Keep Field import from pydantic (v2) and import BaseSettings from pydantic_settings (v2)
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
