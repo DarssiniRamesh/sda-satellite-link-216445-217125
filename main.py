@@ -5,6 +5,7 @@ This file allows running the app from the repository root with:
     uvicorn main:app --reload --port 3002
 
 It imports the FastAPI app instance from the ProtocolandCodingService package.
+The package includes an __init__.py to allow absolute imports to work consistently.
 """
 
 from ProtocolandCodingService.app.main import app

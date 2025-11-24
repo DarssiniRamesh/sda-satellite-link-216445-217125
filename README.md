@@ -25,6 +25,11 @@ From the repository container root (`sda-satellite-link-216445-217125`):
 uvicorn main:app --reload --port 3002
 ```
 
+From inside the service package directory (`sda-satellite-link-216445-217125/ProtocolandCodingService`):
+```
+uvicorn main:app --reload --port 3002
+```
+
 Or use the helper script:
 ```
 bash run.sh
