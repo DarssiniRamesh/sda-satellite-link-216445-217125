@@ -27,6 +27,10 @@ def create_app() -> FastAPI:
         openapi_tags=[
             {"name": "Health", "description": "Service health and liveness checks."},
         ],
+        # Explicitly enable default documentation endpoints
+        docs_url="/docs",
+        redoc_url=None,
+        openapi_url="/openapi.json",
     )
 
     application.add_middleware(

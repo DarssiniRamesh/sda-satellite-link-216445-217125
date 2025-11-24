@@ -24,8 +24,8 @@ Open Swagger UI at:
 - http://localhost:5000/openapi.json
 
 Preview environment:
-- The preview platform may bind the service to port 3011. This service now honors any valid PORT value.
-- Example for preview: `export PORT=3011 && uvicorn main:app --host 0.0.0.0 --port \"$PORT\"`
+- The preview platform may bind the service to ports 3010–3012. This service honors any valid PORT value provided by the orchestrator.
+- Example for preview: `export PORT=3011 && uvicorn main:app --host 0.0.0.0 --port \"$PORT\"`  # or 3010/3012
 
 The ASGI entrypoint `ProtocolandCodingService/main.py` re-exports the FastAPI instance from `src/api/main.py` as `app`. This ensures `uvicorn main:app` works reliably.
 
