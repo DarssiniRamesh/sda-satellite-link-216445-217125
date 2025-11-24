@@ -1,96 +1,100 @@
-"""
-ARQ state machine implementing a simple sliding window and retransmission tracking.
-"""
-
 from __future__ import annotations
 
-from collections import deque
 from dataclasses import dataclass, field
-from typing import Deque, Dict, Optional
-import time
-import logging
-
-
-logger = logging.getLogger(__name__)
+from typing import Dict, List
 
 
 @dataclass
-class ArqPacket:
-    seq: int
-    payload_hex: str
-    retx_count: int = 0
-    acked: bool = False
-    timestamp: float = field(default_factory=lambda: time.time())
-
-
-# PUBLIC_INTERFACE
 class ARQState:
-    """ARQ sliding window state and operations."""
+    """
+    Sliding window ARQ state with wrap-around and retransmission control.
 
-    def __init__(self, window_size: int = 16, max_retx: int = 3) -> None:
-        self.window_size = window_size
-        self.max_retx = max_retx
-        self.base_seq = 0
-        self.next_seq = 0
-        self.window: Deque[ArqPacket] = deque(maxlen=window_size)
-        self.sent: Dict[int, ArqPacket] = {}
-        self.total_retx = 0
+    Requirements:
+    - REQ-ARQ-WINDOW: enforce max window size
+    - REQ-ARQ-RETX: enforce retransmission count per packet
+    - REQ-ARQ-WRAP: 16-bit sequence wrap-around behavior
+    """
+
+    window_size: int = 16
+    max_retx: int = 3
+    base_seq: int = 0  # oldest outstanding (16-bit space)
+    next_seq: int = 0
+    retransmissions: int = 0
+    window: Dict[int, str] = field(default_factory=dict)  # seq -> payload_hex
+    retx_count: Dict[int, int] = field(default_factory=dict)  # seq -> count
 
     def _in_window(self, seq: int) -> bool:
-        return (seq - self.base_seq) % 65536 < self.window_size
+        """Return True if seq is within the current window starting at base_seq."""
+        distance = (seq - self.base_seq) & 0xFFFF
+        return distance < self.window_size
 
     # PUBLIC_INTERFACE
     def push(self, payload_hex: str) -> int:
-        """Queue a new packet in window if space allows, return sequence number."""
+        """Add a new payload into the ARQ window and assign a sequence number.
+
+        Raises:
+            RuntimeError: if the window is full (REQ-ARQ-WINDOW).
+        """
         if len(self.window) >= self.window_size:
-            raise RuntimeError("ARQ window is full.")
+            raise RuntimeError("REQ-ARQ-WINDOW: window full")
         seq = self.next_seq & 0xFFFF
-        pkt = ArqPacket(seq=seq, payload_hex=payload_hex)
-        self.window.append(pkt)
-        self.sent[seq] = pkt
+        # If the seq would not be in the window relative to base (extreme edge), slide base cautiously
+        if not self._in_window(seq) and self.window:
+            # Avoid overrun; this condition shouldn't generally occur with size checks,
+            # but keep a defensive realignment.
+            self.base_seq = seq
+        self.window[seq] = payload_hex
+        self.retx_count.setdefault(seq, 0)
         self.next_seq = (self.next_seq + 1) & 0xFFFF
         return seq
 
     # PUBLIC_INTERFACE
     def ack(self, seq: int) -> None:
-        """Mark a packet as acked and slide the window if possible."""
-        pkt = self.sent.get(seq)
-        if not pkt:
+        """Acknowledge a sequence number and slide the window as needed."""
+        if seq in self.window:
+            del self.window[seq]
+            self.retx_count.pop(seq, None)
+            self._recompute_base()
+
+    def _recompute_base(self) -> None:
+        """Recompute base_seq to the oldest outstanding seq (closest to current base)."""
+        if not self.window:
+            self.base_seq = self.next_seq
             return
-        pkt.acked = True
-        # Slide window from base while contiguous ACKed
-        while self.window and self.window[0].acked:
-            head = self.window.popleft()
-            self.sent.pop(head.seq, None)
-            self.base_seq = (head.seq + 1) & 0xFFFF
+        # Choose the outstanding seq with the smallest forward distance from current base
+        candidates = list(self.window.keys())
+        candidates.sort(key=lambda s: (s - self.base_seq) & 0xFFFF)
+        self.base_seq = candidates[0]
 
     # PUBLIC_INTERFACE
-    def mark_for_retx(self, seq: int) -> Optional[int]:
-        """Mark packet for retransmission if under limit; return new retx count or None if drop."""
-        pkt = self.sent.get(seq)
-        if not pkt:
+    def mark_for_retx(self, seq: int) -> int | None:
+        """Mark a sequence for retransmission if below limit.
+
+        Returns:
+            int | None: The new retransmission count, or None if dropped/unknown.
+
+        Behavior:
+        - If seq unknown, returns None (treated as dropped).
+        - If exceeding max_retx, remove from window (REQ-ARQ-RETX).
+        """
+        if seq not in self.window:
             return None
-        if pkt.acked:
-            return pkt.retx_count
-        if pkt.retx_count >= self.max_retx:
-            logger.warning("Dropping packet seq=%s after max_retx.", seq)
-            # Drop and slide if head
-            if self.window and self.window[0].seq == seq:
-                self.window.popleft()
-                self.sent.pop(seq, None)
-                self.base_seq = (seq + 1) & 0xFFFF
-            else:
-                self.sent.pop(seq, None)
+        count = self.retx_count.get(seq, 0) + 1
+        if count > self.max_retx:
+            # Drop packet after exceeding limit
+            del self.window[seq]
+            self.retx_count.pop(seq, None)
             return None
-        pkt.retx_count += 1
-        self.total_retx += 1
-        return pkt.retx_count
+        self.retx_count[seq] = count
+        self.retransmissions += 1
+        return count
 
     # PUBLIC_INTERFACE
-    def status(self) -> dict:
-        """Return window status for API exposure."""
-        entries = []
-        for pkt in list(self.window):
-            state = "ACK" if pkt.acked else ("RETX" if pkt.retx_count > 0 else "TX")
-            entries.append(f"seq={pkt.seq},state={state},retx={pkt.retx_count}")
-        return {"window": entries, "retransmissions": self.total_retx}
+    def status(self) -> Dict[str, object]:
+        """Return a window status snapshot.
+
+        Returns:
+            dict: { "window": [ "seq_hex:retx_count", ...], "retransmissions": int }
+        """
+        entries = [f"{s:04x}:{self.retx_count.get(s, 0)}" for s in sorted(self.window.keys())]
+        return {"window": entries, "retransmissions": self.retransmissions}

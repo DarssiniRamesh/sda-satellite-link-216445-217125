@@ -21,7 +21,7 @@ from app.models.coding_profiles import (
 from app.models.frame_layout import Preamble, Header, build_header_bytes, build_preamble_bytes
 from app.utils.crc import compute_crc
 from app.utils.scrambler import scramble, descramble
-from app.utils.ldpc import fpga_encode, fpga_decode
+from app.utils.ldpc import fpga_encode, fpga_decode, get_profile
 
 router = APIRouter(prefix="/frame", tags=["protocol"])
 
@@ -115,6 +115,10 @@ def encode(req: EncodeRequest) -> EncodeResponse:
 
     # Sequence number selection is delegated to ARQ router; use zero if not integrated
     seq = 0
+    # REQ-PROTO-LDPC: Validate LDPC profile selection against allowed registry
+    prof = cfg.ldpc_profile or "NR-BaseGraph1"
+    if get_profile(prof) is None:
+        raise HTTPException(status_code=400, detail=f"REQ-PROTO-LDPC: unsupported LDPC profile '{prof}'")
     frame = _frame_assemble(payload, cfg, seq)
     _append_timestamp()
     return EncodeResponse(frame=frame.hex())
@@ -142,6 +146,10 @@ def decode(req: DecodeRequest) -> DecodeResponse:
 
     # For decode we need to infer CRC type; default to CRC32 for this placeholder
     cfg = FrameConfig(protocol="SDA4-5GNR-LDPC", rate=0.75, encoding="OOK-NRZ", crc="CRC32")
+    # REQ-PROTO-LDPC: require valid LDPC profile for decode path too
+    prof = cfg.ldpc_profile or "NR-BaseGraph1"
+    if get_profile(prof) is None:
+        raise HTTPException(status_code=400, detail=f"REQ-PROTO-LDPC: unsupported LDPC profile '{prof}'")
     payload, status = _frame_disassemble(raw, cfg)
     _append_timestamp()
     return DecodeResponse(payload=payload.hex(), status=status)

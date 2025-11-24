@@ -1,9 +1,16 @@
 """
 CRC utility functions supporting CRC-16 (IBM) and CRC-32 (IEEE 802.3).
 
+Requirements:
+- REQ-PROTO-CRC16: Use CRC-16-IBM with polynomial 0xA001 (reflected form of 0x8005).
+- REQ-PROTO-CRC32: Use CRC-32 IEEE with polynomial 0x04C11DB7 (reflected 0xEDB88320).
+
 Security notes:
 - Avoids any dynamic code execution.
 - Operates purely on bytes.
+
+Unit test stubs:
+- tests/test_crc16_ibm.py and tests/test_crc32_ieee.py should validate known vectors (to be added).
 """
 
 from typing import Literal
