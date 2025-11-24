@@ -25,7 +25,7 @@ fi
 PORT="${PORT:-3002}"
 HOST="${HOST:-0.0.0.0}"
 
-# Ensure a virtual environment exists and activate it
+# Ensure a virtual environment exists and activate it (idempotent)
 VENV_DIR="${VENV_DIR:-.venv}"
 if [ ! -d "${VENV_DIR}" ]; then
   echo "[bootstrap] Creating virtual environment at ${VENV_DIR} ..."
@@ -57,7 +57,7 @@ if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
   if [ -f "${REQ_FILE}" ]; then
     python -m pip install --no-cache-dir -r "${REQ_FILE}"
   else
-    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0'
+    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0' 'pydantic>=2,<3' 'pydantic-settings>=2,<3' 'python-dotenv>=1.0.0,<2.0.0'
   fi
   if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
     echo "[bootstrap] ERROR: fastapi/uvicorn still not importable after reinstall. Aborting." >&2

@@ -16,7 +16,7 @@ fi
 PORT="${PORT:-3002}"
 HOST="${HOST:-0.0.0.0}"
 
-# Create/activate virtual environment
+# Create/activate virtual environment (idempotent)
 VENV_DIR="${VENV_DIR:-.venv}"
 if [ ! -d "${VENV_DIR}" ]; then
   echo "[run.sh] Creating local virtualenv at ${VENV_DIR} ..."
@@ -36,12 +36,12 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # Preflight import check. If it fails, attempt reinstall and fail if still missing.
-if ! python -c "import fastapi, uvicorn" >/devnull 2>&1; then
+if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
   echo "[run.sh] fastapi/uvicorn not importable; attempting reinstall ..."
   if [ -f "requirements.txt" ]; then
     python -m pip install --no-cache-dir -r requirements.txt
   else
-    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0'
+    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0' 'pydantic>=2,<3' 'pydantic-settings>=2,<3' 'python-dotenv>=1.0.0,<2.0.0'
   fi
   if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
     echo "[run.sh] ERROR: fastapi/uvicorn still not importable after reinstall. Aborting." >&2
