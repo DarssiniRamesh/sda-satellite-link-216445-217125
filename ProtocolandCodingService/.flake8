@@ -1,7 +1,22 @@
 [flake8]
-exclude = .git,__pycache__,build,dist,venv
-select = E9,F
-max-line-length = 120
+# Exclude virtual environments and third-party packages from linting.
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    .tox,
+    build,
+    dist,
+    site-packages,
+    .pytest_cache
+
+# Align with common FastAPI style while keeping CI strict on our codebase.
+max-line-length = 100
+# E203: whitespace before ':', compatible with Black if used
+# W503: line break before binary operator
+extend-ignore = E203, W503
+# Allow __init__ packages to export names without being used locally
 per-file-ignores =
     __init__.py:F401
-max-complexity = 18
