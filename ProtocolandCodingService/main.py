@@ -30,7 +30,12 @@ except Exception:  # pragma: no cover - defensive logging
     raise
 
 # Re-export symbol expected by uvicorn (main:app)
+# PUBLIC_INTERFACE
 app = _app
+app.__doc__ = (
+    "FastAPI application instance for the Protocol and Coding Service. "
+    "Use `uvicorn main:app` to run."
+)
 
 # Explicit public API
 __all__: Final = ["app"]

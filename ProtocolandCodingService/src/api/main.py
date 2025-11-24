@@ -1,3 +1,5 @@
+"""FastAPI application factory and default app instance for Protocol and Coding Service."""
+
 from __future__ import annotations
 
 from typing import Final
@@ -47,5 +49,6 @@ def create_app() -> FastAPI:
 
 
 # Expose a module-level symbol `app`
+# PUBLIC_INTERFACE
 app: Final[FastAPI] = create_app()
 __all__: Final = ["app", "create_app"]
