@@ -22,6 +22,9 @@ python -m pip install -r requirements.txt
 ### 2) Run locally
 From the repository container root (`sda-satellite-link-216445-217125`):
 ```
+# Ensures dependencies are installed and then runs uvicorn
+bash bootstrap.sh
+# Or run directly with uvicorn (ensure deps installed): 
 uvicorn main:app --reload --port 3002
 ```
 
