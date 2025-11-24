@@ -29,6 +29,7 @@ app.__doc__ = (
     "FastAPI application instance for the Protocol and Coding Service. "
     "Use `uvicorn main:app` to run."
 )
+# Note: Swagger UI is available at /docs and OpenAPI JSON at /openapi.json by default.
 
 # Explicit public API
 __all__: Final = ["app"]

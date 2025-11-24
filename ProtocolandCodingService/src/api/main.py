@@ -45,6 +45,12 @@ def create_app() -> FastAPI:
         """
         return {"message": "Healthy"}
 
+    @application.get("/health", tags=["Health"], summary="Readiness/Health probe", description="Ready probe for orchestrators.")
+    # PUBLIC_INTERFACE
+    def readiness() -> dict[str, str]:
+        """Readiness endpoint for liveness probes and readiness checks."""
+        return {"status": "ok"}
+
     return application
 
 

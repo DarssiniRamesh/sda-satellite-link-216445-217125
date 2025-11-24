@@ -26,8 +26,9 @@ The ASGI entrypoint `ProtocolandCodingService/main.py` re-exports the FastAPI in
 
 ## Health check
 
-- GET `/` returns `{ "message": "Healthy" }`.
-- OpenAPI docs at `/docs`.
+- Liveness: GET `/` returns `{ "message": "Healthy" }`.
+- Readiness: GET `/health` returns `{ "status": "ok" }`.
+- OpenAPI docs at `/docs` and spec at `/openapi.json`.
 
 ## Notes
 
