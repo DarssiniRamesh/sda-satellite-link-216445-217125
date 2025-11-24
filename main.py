@@ -8,7 +8,7 @@ It imports the FastAPI app instance from the ProtocolandCodingService package.
 The package includes an __init__.py to allow absolute imports to work consistently.
 """
 
-from ProtocolandCodingService.app.main import app
+from ProtocolandCodingService.app.main import app  # absolute works from repo root
 
 # PUBLIC_INTERFACE
 def get_app():
