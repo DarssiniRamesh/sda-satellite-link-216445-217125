@@ -4,18 +4,21 @@
 
 set -euo pipefail
 
-# Standardize working directory to the service root where main.py lives
-# Container copies code into /app, so prefer that; otherwise fallback relative.
-if [ -d "/app/ProtocolandCodingService" ]; then
-  cd /app || true
+# Move to the service root (directory containing main.py and ProtocolandCodingService/)
+if [ -d "/app/ProtocolandCodingService" ] && [ -f "/app/main.py" ]; then
+  cd /app
 elif [ -f "./main.py" ] && [ -d "./ProtocolandCodingService" ]; then
-  # already at service root
-  :
+  : # already at service root
+elif [ -d "./sda-satellite-link-216445-217125" ] && [ -f "./sda-satellite-link-216445-217125/main.py" ]; then
+  cd ./sda-satellite-link-216445-217125
 else
-  # Try to locate the service folder relative to current working directory
-  if [ -d "./sda-satellite-link-216445-217125" ]; then
-    cd ./sda-satellite-link-216445-217125 || true
-  fi
+  # best-effort: if a nested directory exists, move into it
+  for d in sda-satellite-link-216445-217125 .; do
+    if [ -d "$d" ] && [ -f "$d/main.py" ] && [ -d "$d/ProtocolandCodingService" ]; then
+      cd "$d"
+      break
+    fi
+  done
 fi
 
 # Use provided HOST/PORT env vars or defaults
@@ -34,7 +37,7 @@ source "${VENV_DIR}/bin/activate"
 echo "[bootstrap] Python version: $(python --version 2>&1 || true)"
 echo "[bootstrap] Pip version: $(python -m pip --version 2>&1 || true)"
 
-# Always install requirements to ensure fastapi is present, especially on fresh environments or bind mounts
+# Always upgrade pip and install dependencies
 REQ_FILE="requirements.txt"
 if [ -f "/app/requirements.txt" ]; then
   REQ_FILE="/app/requirements.txt"
@@ -42,27 +45,31 @@ elif [ ! -f "${REQ_FILE}" ]; then
   echo "[bootstrap] WARNING: requirements.txt not found; proceeding but startup may fail."
 fi
 
+echo "[bootstrap] Installing dependencies ..."
+python -m pip install --upgrade pip
 if [ -f "${REQ_FILE}" ]; then
-  echo "[bootstrap] Installing dependencies from ${REQ_FILE} ..."
-  python -m pip install --upgrade pip
   python -m pip install --no-cache-dir -r "${REQ_FILE}"
 fi
 
-# Quick import check to fail early and attempt reinstall if needed
+# Preflight import check. If it fails, attempt reinstall once and fail with clear message if still missing.
 if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
-  echo "[bootstrap] fastapi/uvicorn not importable; retrying pip install ..."
+  echo "[bootstrap] fastapi/uvicorn not importable; attempting reinstall ..."
   if [ -f "${REQ_FILE}" ]; then
     python -m pip install --no-cache-dir -r "${REQ_FILE}"
   else
-    python -m pip install --no-cache-dir fastapi uvicorn[standard]
+    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0'
   fi
-  # Recheck and fail loudly if still missing
   if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
-    echo "[bootstrap] ERROR: fastapi still not importable after install. Aborting." >&2
+    echo "[bootstrap] ERROR: fastapi/uvicorn still not importable after reinstall. Aborting." >&2
     exit 1
   fi
 fi
 
+# Ensure we are in the service root so 'main:app' resolves
+if [ ! -f "./main.py" ]; then
+  echo "[bootstrap] ERROR: main.py not found in current directory $(pwd). Aborting." >&2
+  exit 1
+fi
+
 echo "[bootstrap] Launching uvicorn main:app on ${HOST}:${PORT} from $(pwd) ..."
-# Do not use 'ProtocolandCodingService.app.main' path; always use plain main:app from service root.
 exec uvicorn main:app --host "${HOST}" --port "${PORT}"

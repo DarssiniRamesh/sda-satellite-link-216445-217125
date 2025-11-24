@@ -4,12 +4,12 @@
 
 set -euo pipefail
 
-# Standardize working directory to service root (folder containing main.py and requirements.txt)
+# Move to the service root (directory containing main.py and ProtocolandCodingService/)
 if [ -d "./ProtocolandCodingService" ] && [ -f "./main.py" ]; then
   : # already at service root
-elif [ -d "./sda-satellite-link-216445-217125" ]; then
+elif [ -d "./sda-satellite-link-216445-217125" ] && [ -f "./sda-satellite-link-216445-217125/main.py" ]; then
   cd "./sda-satellite-link-216445-217125"
-elif [ -d "sda-satellite-link-216445-217125" ]; then
+elif [ -d "sda-satellite-link-216445-217125" ] && [ -f "sda-satellite-link-216445-217125/main.py" ]; then
   cd "sda-satellite-link-216445-217125"
 fi
 
@@ -28,23 +28,32 @@ source "${VENV_DIR}/bin/activate"
 echo "[run.sh] Python: $(python --version 2>&1 || true)"
 echo "[run.sh] Pip: $(python -m pip --version 2>&1 || true)"
 
-# Install requirements unconditionally to avoid missing fastapi issues
+# Always upgrade pip and install requirements
+echo "[run.sh] Installing requirements ..."
+python -m pip install --upgrade pip
 if [ -f "requirements.txt" ]; then
-  echo "[run.sh] Installing requirements ..."
-  python -m pip install --upgrade pip
   python -m pip install --no-cache-dir -r requirements.txt
 fi
 
-# Quick import check and remediate if necessary
-if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
-  echo "[run.sh] fastapi/uvicorn not importable; reinstalling ..."
+# Preflight import check. If it fails, attempt reinstall and fail if still missing.
+if ! python -c "import fastapi, uvicorn" >/devnull 2>&1; then
+  echo "[run.sh] fastapi/uvicorn not importable; attempting reinstall ..."
   if [ -f "requirements.txt" ]; then
     python -m pip install --no-cache-dir -r requirements.txt
   else
-    python -m pip install --no-cache-dir fastapi uvicorn[standard]
+    python -m pip install --no-cache-dir 'fastapi>=0.110,<1.0' 'uvicorn[standard]>=0.24,<1.0'
+  fi
+  if ! python -c "import fastapi, uvicorn" >/dev/null 2>&1; then
+    echo "[run.sh] ERROR: fastapi/uvicorn still not importable after reinstall. Aborting." >&2
+    exit 1
   fi
 fi
 
+# Ensure we are in the service root so 'main:app' resolves
+if [ ! -f "./main.py" ]; then
+  echo "[run.sh] ERROR: main.py not found in current directory $(pwd). Aborting." >&2
+  exit 1
+fi
+
 echo "[run.sh] Starting ProtocolandCodingService on ${HOST}:${PORT} from $(pwd) ..."
-# Ensure we always run from the service root and use main:app
 exec uvicorn main:app --host "${HOST}" --port "${PORT}" --reload
