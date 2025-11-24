@@ -6,7 +6,7 @@ This service handles synchronization, channel coding (5G NR LDPC FEC), frame con
 
 1. Create and configure environment:
    - Copy `.env.example` to `.env` and set variables as needed.
-   - Only the following ports are allowed: `3000`, `3001`, `3002`, `5000`.
+   - Allowed ports: `3000`, `3001`, `3002`, `5000`. Default for this service: `5000`.
 
 2. Install dependencies:
    - Using pip
@@ -16,10 +16,13 @@ This service handles synchronization, channel coding (5G NR LDPC FEC), frame con
 3. Start the server:
    - From the service root directory:
      - cd ProtocolandCodingService
-     - export PORT=3000  # optional; defaults to 3000 if unset/invalid
-     - uvicorn main:app --host 0.0.0.0 --port "${PORT:-3000}"
+     - uvicorn main:app --host 0.0.0.0 --port 5000
+     - Or override with env: `export PORT=5000 && uvicorn main:app --host 0.0.0.0 --port "${PORT}"`
 
-The ASGI entrypoint is implemented at `ProtocolandCodingService/main.py` and re-exports the FastAPI instance from `src/api/main.py` as `app`. This ensures `uvicorn main:app` works reliably.
+Open Swagger UI at:
+- http://localhost:5000/docs
+
+The ASGI entrypoint `ProtocolandCodingService/main.py` re-exports the FastAPI instance from `src/api/main.py` as `app`. This ensures `uvicorn main:app` works reliably.
 
 ## Health check
 
@@ -29,4 +32,4 @@ The ASGI entrypoint is implemented at `ProtocolandCodingService/main.py` and re-
 ## Notes
 
 - Do not hardcode secrets; use environment variables.
-- To change ports, set `PORT` to one of: `3000`, `3001`, `3002`, `5000`. Any other value will be ignored and the service will default to `3000`.
+- To change ports, set `PORT` to one of: `3000`, `3001`, `3002`, `5000`. Any other value will be ignored and the service will default to `5000`.
