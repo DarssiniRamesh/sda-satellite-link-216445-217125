@@ -47,4 +47,5 @@ def get_app():
     return app
 
 # Expose 'app' at module level to support 'uvicorn main:app'
+# This is required by the Dockerfile CMD and local run instructions.
 __all__ = ["app"]

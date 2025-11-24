@@ -3,7 +3,7 @@
 fastapi==0.110.0
 uvicorn[standard]==0.24.0.post1
 
-# Pydantic v2 and pydantic-settings v2 as required
+# Pydantic v2 and pydantic-settings v2 as required (explicitly v2 line to avoid v1 behavior)
 pydantic>=2,<3
 pydantic-settings>=2,<3
 

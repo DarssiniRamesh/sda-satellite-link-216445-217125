@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from .settings import get_settings
 
+# Load settings at module import time; unknown env vars are ignored by settings
 settings = get_settings()
 
 # Basic logging configuration
