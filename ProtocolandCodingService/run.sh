@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # This script installs dependencies (without relying on an existing virtual environment)
-# and runs the Protocol and Coding Service using uvicorn on port 3002.
+# and runs the Protocol and Coding Service using uvicorn.
+# Defaults: HOST=0.0.0.0, PORT=3002 (override with environment variables)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${SCRIPT_DIR}"
