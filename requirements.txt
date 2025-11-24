@@ -1,5 +1,7 @@
 # Runtime dependencies for ProtocolandCodingService
+# Pin to widely compatible, stable versions for FastAPI stack
 fastapi>=0.103.0,<1.0.0
 uvicorn[standard]>=0.23.0,<1.0.0
+# Pydantic v1 remains broadly compatible across ecosystems; allow v1 and v2 under <3
 pydantic>=1.10.0,<3.0.0
 python-dotenv>=1.0.0,<2.0.0
