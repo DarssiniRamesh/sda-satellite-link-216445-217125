@@ -1,5 +1,5 @@
 # Runtime dependencies for ProtocolandCodingService
-# FastAPI and ASGI server
+# FastAPI and ASGI server (pin compatible versions)
 fastapi==0.110.0
 uvicorn[standard]==0.24.0.post1
 

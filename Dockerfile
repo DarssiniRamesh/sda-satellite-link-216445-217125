@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 
+# Use /app as the container workspace and service root containing main.py
 WORKDIR /app
 
 # Install system dependencies useful for building dependencies
@@ -11,7 +12,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/requirements.txt
 RUN python -m pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy application source
+# Copy application source into /app (service root holds main.py and ProtocolandCodingService/)
 COPY . /app
 
 # Ensure bootstrap is executable
@@ -23,5 +24,5 @@ EXPOSE 3002
 # Environment
 ENV PORT=3002 HOST=0.0.0.0
 
-# Standardized entrypoint: use bootstrap to re-install (in case of mounted volumes) and run uvicorn
+# Standardized entrypoint: bootstrap will ensure venv and install requirements, then run uvicorn main:app
 ENTRYPOINT ["/app/bootstrap.sh"]
