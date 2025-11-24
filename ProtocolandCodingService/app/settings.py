@@ -11,10 +11,62 @@ Note:
 - Unknown environment variables should NOT cause validation errors in preview envs
 """
 
-from typing import List, Optional
+from __future__ import annotations
 
-from pydantic import Field
+import json
+from typing import List, Optional, Sequence, Union
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+
+def _parse_list(value: Union[str, Sequence[str], None]) -> Optional[List[str]]:
+    """
+    Helper to coerce environment-provided values into a list of strings.
+
+    Accepts:
+    - None → None
+    - list/tuple of str → list[str]
+    - JSON-style list in a string (e.g., '["a","b"]') → list[str]
+    - Comma-separated string (e.g., 'a,b,c') → ['a','b','c'] with whitespace trimmed
+    - Empty string or string with only commas/whitespace → None
+    """
+    if value is None:
+        return None
+
+    # If already a sequence of strings (but not a str), normalize to list[str]
+    if isinstance(value, (list, tuple)):
+        # Filter out falsy or purely-whitespace entries and strip whitespace
+        normalized = [str(v).strip() for v in value if str(v).strip() != ""]
+        return normalized or None
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if raw == "":
+            return None
+
+        # Try to parse JSON-style list first
+        if (raw.startswith("[") and raw.endswith("]")) or (raw.startswith("(") and raw.endswith(")")):
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, (list, tuple)):
+                    normalized = [str(v).strip() for v in parsed if str(v).strip() != ""]
+                    return normalized or None
+            except Exception:
+                # fall through to comma parsing
+                pass
+
+        # Fallback: comma-separated handling
+        parts = [p.strip() for p in raw.split(",")]
+        # Remove empty entries
+        parts = [p for p in parts if p != ""]
+        return parts or None
+
+    # Unknown type: coerce to string and split by commas as a conservative fallback
+    coerced = str(value)
+    parts = [p.strip() for p in coerced.split(",")]
+    parts = [p for p in parts if p != ""]
+    return parts or None
 
 
 class AppSettings(BaseSettings):
@@ -46,6 +98,7 @@ class AppSettings(BaseSettings):
     ws_url: Optional[str] = Field(default=None, description="Preview env websocket URL")
     site_url: Optional[str] = Field(default=None, description="Site base URL for links/callbacks")
 
+    # CORS settings: accept comma-separated or JSON-like lists from env
     allowed_origins: Optional[List[str]] = Field(
         default=None, description="CORS allowed origins list"
     )
@@ -75,6 +128,12 @@ class AppSettings(BaseSettings):
         "env_file_encoding": "utf-8",
         "extra": "ignore",
     }
+
+    # Validators to coerce list-like env inputs before Pydantic validates types
+    @field_validator("allowed_origins", "allowed_headers", "allowed_methods", mode="before")
+    @classmethod
+    def _coerce_list_fields(cls, v):
+        return _parse_list(v)
 
 
 # PUBLIC_INTERFACE
